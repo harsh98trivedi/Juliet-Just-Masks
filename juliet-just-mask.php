@@ -1,19 +1,19 @@
 <?php
 /**
- * Plugin Name:          Juliet Just Mask
- * Plugin URI:           https://wordpress.org/plugins/juliet-just-mask/
- * Description:          URL masking, mask manager, and stealth reverse proxy companion for Romeo Redirect Manager. Maps local paths to remote applications and renders them natively — no iframes, no Nginx rules.
- * Version:              1.0.0
- * Requires at least:    6.2
- * Requires PHP:         7.4
- * Author:               Harsh Trivedi
- * Author URI:           https://harsh98trivedi.github.io/
- * License:              GPL-2.0-or-later
- * License URI:          https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:          juliet-just-mask
- * Domain Path:          /languages
+ * Plugin Name:       Juliet Just Mask
+ * Plugin URI:        https://wordpress.org/plugins/juliet-just-mask/
+ * Description:       URL masking, mask manager, and stealth reverse proxy companion for Romeo Redirect Manager. Maps local paths to remote applications and renders them natively — no iframes, no Nginx rules.
+ * Version:           1.0.0
+ * Requires at least: 6.2
+ * Requires PHP:      7.4
+ * Author:            Harsh Trivedi
+ * Author URI:        https://harsh98trivedi.github.io/
+ * License:           GPLv2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       juliet-just-mask
+ * Domain Path:       /languages
  *
- * @package JulietJustMask
+ * @package           Juliet_Just_Mask
  */
 
 defined( 'ABSPATH' ) || exit;
