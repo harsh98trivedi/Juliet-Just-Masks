@@ -1,8 +1,6 @@
-<p align="center">
-  <img src="assets/images/banner-1544x500.png" alt="Juliet Just Mask Banner" width="100%">
-</p>
-
 # Juliet Just Mask 🎭
+
+![Juliet Just Mask Banner](assets/images/meta.jpg)
 
 > **URL Masking, Mask Manager & Native Reverse Proxy Companion for WordPress**  
 > High-performance URL masker to serve remote web applications, SPAs, and landing pages natively on your WordPress domain — zero iframes, zero Nginx / Apache config.
