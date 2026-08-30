@@ -1,5 +1,5 @@
 {
-  "name": "harsh98trivedi/juliet-just-mask",
+  "name": "harsh98trivedi/juliet-just-masks",
   "description": "URL masking, mask manager, and stealth reverse proxy companion for Romeo Redirect Manager.",
   "type": "wordpress-plugin",
   "keywords": [
@@ -13,7 +13,7 @@
     "spa-proxy",
     "landing-page-masking"
   ],
-  "homepage": "https://wordpress.org/plugins/juliet-just-mask/",
+  "homepage": "https://wordpress.org/plugins/juliet-just-masks/",
   "license": "GPL-2.0-or-later",
   "authors": [
     {
@@ -23,8 +23,8 @@
     }
   ],
   "support": {
-    "issues": "https://wordpress.org/support/plugin/juliet-just-mask/",
-    "source": "https://github.com/harsh98trivedi/juliet-just-mask"
+    "issues": "https://wordpress.org/support/plugin/juliet-just-masks/",
+    "source": "https://github.com/harsh98trivedi/Juliet-Just-Masks"
   },
   "require": {
     "php": ">=7.4"
@@ -44,3 +44,4 @@
     }
   }
 }
+

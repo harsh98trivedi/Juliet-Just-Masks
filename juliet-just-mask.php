@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name:       Juliet Just Mask
- * Plugin URI:        https://wordpress.org/plugins/juliet-just-mask/
+ * Plugin Name:       Juliet Just Masks
+ * Plugin URI:        https://wordpress.org/plugins/juliet-just-masks/
  * Description:       URL masking, mask manager, and stealth reverse proxy companion for Romeo Redirect Manager. Maps local paths to remote applications and renders them natively — no iframes, no Nginx rules.
  * Version:           1.0.0
  * Requires at least: 6.2
@@ -10,10 +10,10 @@
  * Author URI:        https://harsh98trivedi.github.io/
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       juliet-just-mask
+ * Text Domain:       juliet-just-masks
  * Domain Path:       /languages
  *
- * @package           Juliet_Just_Mask
+ * @package           Juliet_Just_Masks
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -91,8 +91,21 @@ final class Juliet_Plugin {
 			wp_cache_add_non_persistent_groups( array( 'juliet' ) );
 		}
 
+		add_action( 'init', array( $this, 'load_textdomain' ) );
+
 		$this->router->register_hooks();
 		$this->admin->register_hooks();
+	}
+
+	/**
+	 * Loads plugin textdomain for translations.
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain(
+			'juliet-just-masks',
+			false,
+			dirname( plugin_basename( JULIET_PLUGIN_FILE ) ) . '/languages'
+		);
 	}
 }
 

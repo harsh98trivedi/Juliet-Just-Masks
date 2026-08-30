@@ -1,4 +1,4 @@
-=== Juliet Just Mask ===
+=== Juliet Just Masks ===
 Contributors: harsh98trivedi
 Tags: url-masking, mask-manager, reverse-proxy, url-masker, stealth-routing
 Donate link: https://buymeacoffee.com/harshtrivedi
@@ -9,11 +9,11 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-The ultimate URL masking and stealth routing mask manager. Reverse proxy remote apps and landing pages on your own domain without iframes.
+High-performance URL masking and stealth routing mask manager. Reverse proxy remote apps and landing pages on your own domain without iframes.
 
 == Description ==
 
-**Juliet Just Mask** is a high-performance URL masking and reverse proxy **mask manager** for WordPress. While Romeo Redirect Manager handles open redirects, Juliet provides seamless **stealth routing** and **URL masking**.
+**Juliet Just Masks** is a high-performance URL masking and reverse proxy **mask manager** for WordPress. While Romeo Redirect Manager handles open redirects, Juliet provides seamless **stealth routing** and **URL masking**.
 
 As a lightweight, native **URL masker**, Juliet lets WordPress act as a stealth reverse proxy. It intercepts specific incoming paths, keeps the visitor's address bar unchanged, and fetches/renders dynamic HTML, React/Vue SPAs, or external landing pages behind the scenes.
 
@@ -42,7 +42,7 @@ As a lightweight, native **URL masker**, Juliet lets WordPress act as a stealth 
 
 = Example =
 
-1. Go to **Juliet Just Mask** in wp-admin.
+1. Go to **Juliet Just Masks** in wp-admin.
 2. Click **Create New Mask**.
 3. Enter the Local Path: `marketing-hub`.
 4. Enter the Remote Target URL: `https://external-landing-page.com/promo-1`.
@@ -68,9 +68,9 @@ Visiting `yoursite.com/marketing-hub` now renders the remote landing page while 
 
 == Installation ==
 
-1. Upload the `juliet-just-mask` folder to `/wp-content/plugins/`, or install via the Plugins screen.
-2. Activate **Juliet Just Mask** through the **Plugins** menu (the registry table is created automatically).
-3. Navigate to **Juliet Just Mask** in the admin menu and create your first mask.
+1. Upload the `juliet-just-masks` folder to `/wp-content/plugins/`, or install via the Plugins screen.
+2. Activate **Juliet Just Masks** through the **Plugins** menu (the registry table is created automatically).
+3. Navigate to **Juliet Just Masks** in the admin menu and create your first mask.
 
 If routes return 404s after manual database edits, visit **Settings → Permalinks** once to flush rewrite rules.
 

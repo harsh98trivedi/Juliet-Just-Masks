@@ -1445,12 +1445,14 @@ select.jjm-input {
    WordPress Sidebar Icon — all admin pages
    Uses WP's native padding approach
    ================================================ */
+#toplevel_page_juliet-just-masks .wp-menu-image,
 #toplevel_page_juliet-just-mask .wp-menu-image {
 	display: block !important;
 	float: left !important;
 	width: 36px !important;
 }
 
+#toplevel_page_juliet-just-masks .wp-menu-image img,
 #toplevel_page_juliet-just-mask .wp-menu-image img {
 	display: inline-block !important;
 	width: 20px !important;
@@ -1466,8 +1468,11 @@ select.jjm-input {
 	transition: opacity 0.15s ease;
 }
 
+.wp-has-current-submenu#toplevel_page_juliet-just-masks .wp-menu-image img,
 .wp-has-current-submenu#toplevel_page_juliet-just-mask .wp-menu-image img,
+.current-menu-item#toplevel_page_juliet-just-masks .wp-menu-image img,
 .current-menu-item#toplevel_page_juliet-just-mask .wp-menu-image img,
+#toplevel_page_juliet-just-masks:hover .wp-menu-image img,
 #toplevel_page_juliet-just-mask:hover .wp-menu-image img {
 	opacity: 1 !important;
 }

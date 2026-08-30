@@ -289,17 +289,17 @@ class Juliet_Proxy {
 	 */
 	protected function validate_outbound_url( $url ) {
 		if ( '' === $url || 0 !== stripos( $url, 'http' ) ) {
-			return new WP_Error( 'juliet_invalid_protocol', __( 'Invalid target protocol.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_invalid_protocol', __( 'Invalid target protocol.', 'juliet-just-masks' ) );
 		}
 
 		$parts = wp_parse_url( $url );
 
 		if ( empty( $parts['host'] ) || empty( $parts['scheme'] ) || ! in_array( strtolower( $parts['scheme'] ), array( 'http', 'https' ), true ) ) {
-			return new WP_Error( 'juliet_invalid_target', __( 'Invalid target URL.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_invalid_target', __( 'Invalid target URL.', 'juliet-just-masks' ) );
 		}
 
 		if ( isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
-			return new WP_Error( 'juliet_credentials_in_url', __( 'Embedded credentials are not allowed in target URLs.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_credentials_in_url', __( 'Embedded credentials are not allowed in target URLs.', 'juliet-just-masks' ) );
 		}
 
 		$host = strtolower( $parts['host'] );
@@ -322,7 +322,7 @@ class Juliet_Proxy {
 
 		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
 			if ( ! $this->ip_is_public( $host ) ) {
-				return new WP_Error( 'juliet_private_target', __( 'Target resolves to a private or reserved IP address.', 'juliet-just-mask' ) );
+				return new WP_Error( 'juliet_private_target', __( 'Target resolves to a private or reserved IP address.', 'juliet-just-masks' ) );
 			}
 
 			return $url;
@@ -330,7 +330,7 @@ class Juliet_Proxy {
 
 		foreach ( $this->resolve_host_ips( $host ) as $ip ) {
 			if ( ! $this->ip_is_public( $ip ) ) {
-				return new WP_Error( 'juliet_private_target', __( 'Target resolves to a private or reserved IP address.', 'juliet-just-mask' ) );
+				return new WP_Error( 'juliet_private_target', __( 'Target resolves to a private or reserved IP address.', 'juliet-just-masks' ) );
 			}
 		}
 
@@ -514,7 +514,7 @@ class Juliet_Proxy {
 
 		$headers = array_filter(
 			array(
-				'User-Agent'         => '' !== $user_agent ? $user_agent : 'Juliet-Just-Mask/' . JULIET_VERSION . ' (WordPress reverse proxy)',
+				'User-Agent'         => '' !== $user_agent ? $user_agent : 'Juliet-Just-Masks/' . JULIET_VERSION . ' (WordPress reverse proxy)',
 				'Accept'             => isset( $_SERVER['HTTP_ACCEPT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) ), 0, 500 ) : '',
 				'Accept-Language'    => isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ), 0, 200 ) : '',
 				'X-Forwarded-For'    => $chain,
@@ -800,7 +800,7 @@ class Juliet_Proxy {
 			load_template( $template );
 		} else {
 			wp_die(
-				esc_html__( 'Page not found.', 'juliet-just-mask' ),
+				esc_html__( 'Page not found.', 'juliet-just-masks' ),
 				'',
 				array( 'response' => 404 )
 			);

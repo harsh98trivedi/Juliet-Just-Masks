@@ -1,6 +1,6 @@
-# Juliet Just Mask 🎭
+# Juliet Just Masks 🎭
 
-![Juliet Just Mask Banner](assets/images/meta.jpg)
+![Juliet Just Masks Banner](assets/images/meta.jpg)
 
 > **URL Masking, Mask Manager & Native Reverse Proxy Companion for WordPress**  
 > High-performance URL masker to serve remote web applications, SPAs, and landing pages natively on your WordPress domain — zero iframes, zero Nginx / Apache config.
@@ -14,7 +14,7 @@
 
 ## 📖 Overview
 
-While redirect managers focus on **Open Routing** (moving traffic from URL A to URL B and changing the browser's address bar), **Juliet Just Mask** delivers **Stealth Routing** (Reverse Proxy) as a dedicated **URL Mask Manager** and **URL Masker**.
+While redirect managers focus on **Open Routing** (moving traffic from URL A to URL B and changing the browser's address bar), **Juliet Just Masks** delivers **Stealth Routing** (Reverse Proxy) as a dedicated **URL Mask Manager** and **URL Masker**.
 
 Juliet intercepts incoming HTTP requests on designated local paths, keeps the visitor’s address bar unchanged, fetches the dynamic content or Single-Page Application (SPA) from a remote target server, patches relative assets and links on the fly, and delivers the payload seamlessly.
 
@@ -58,9 +58,9 @@ Visitor Browser                WordPress (Juliet Engine)                Remote T
 ## 🚀 Installation & Quick Start
 
 ### Installation
-1. Download or clone this repository into `/wp-content/plugins/juliet-just-mask/`.
+1. Download or clone this repository into `/wp-content/plugins/juliet-just-masks/`.
 2. Activate the plugin through the WordPress **Plugins** screen (`wp-admin/plugins.php`).
-3. Access **Juliet Just Mask** in your WordPress admin menu.
+3. Access **Juliet Just Masks** in your WordPress admin menu.
 
 ### Creating Your First Mask
 1. Click **Create New Mask** in the top-right toolbar.
@@ -163,7 +163,7 @@ Distributed under the **GPL-2.0+** License. See [`LICENSE`](LICENSE) for more in
 
 If you find this plugin helpful, please consider:
 - ⭐ Starring this repository
-- 📝 [Leaving a 5-star review on WordPress.org](https://wordpress.org/support/plugin/juliet-just-mask/reviews/#new-post)
+- 📝 [Leaving a 5-star review on WordPress.org](https://wordpress.org/support/plugin/juliet-just-masks/reviews/#new-post)
 - ☕ [Buying me a coffee](https://buymeacoffee.com/harshtrivedi)
 - 📣 Sharing it with others
 
@@ -172,3 +172,4 @@ If you find this plugin helpful, please consider:
 ## 👨‍💻 Author
 
 **Made with ❤️ by [Harsh Trivedi](https://harsh98trivedi.github.io/)**
+

@@ -124,23 +124,23 @@ class Juliet_Mask_Store {
 		$url = trim( (string) $url );
 
 		if ( '' === $url ) {
-			return new WP_Error( 'juliet_empty_target', __( 'A Remote Target URL is required.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_empty_target', __( 'A Remote Target URL is required.', 'juliet-just-masks' ) );
 		}
 
 		$url = esc_url_raw( $url, array( 'http', 'https' ) );
 
 		if ( ! $url ) {
-			return new WP_Error( 'juliet_invalid_target', __( 'The Remote Target URL is invalid. Only http:// and https:// targets are allowed.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_invalid_target', __( 'The Remote Target URL is invalid. Only http:// and https:// targets are allowed.', 'juliet-just-masks' ) );
 		}
 
 		$parts = wp_parse_url( $url );
 
 		if ( empty( $parts['host'] ) || empty( $parts['scheme'] ) || ! in_array( $parts['scheme'], array( 'http', 'https' ), true ) ) {
-			return new WP_Error( 'juliet_invalid_protocol', __( 'Invalid target protocol. The URL must start with http:// or https://.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_invalid_protocol', __( 'Invalid target protocol. The URL must start with http:// or https://.', 'juliet-just-masks' ) );
 		}
 
 		if ( isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
-			return new WP_Error( 'juliet_credentials_in_url', __( 'Target URLs containing embedded credentials are not allowed.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_credentials_in_url', __( 'Target URLs containing embedded credentials are not allowed.', 'juliet-just-masks' ) );
 		}
 
 		return $url;
@@ -160,15 +160,15 @@ class Juliet_Mask_Store {
 		$slug = $this->sanitize_slug( $slug );
 
 		if ( '' === $slug ) {
-			return new WP_Error( 'juliet_invalid_slug', __( 'A Local Path is required.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_invalid_slug', __( 'A Local Path is required.', 'juliet-just-masks' ) );
 		}
 
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9_\-]{0,99}$/', $slug ) ) {
-			return new WP_Error( 'juliet_invalid_slug', __( 'The Local Path must be 1–100 characters using letters, numbers, dashes and underscores, starting with a letter or number.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_invalid_slug', __( 'The Local Path must be 1–100 characters using letters, numbers, dashes and underscores, starting with a letter or number.', 'juliet-just-masks' ) );
 		}
 
 		if ( $this->is_reserved_slug( $slug ) ) {
-			return new WP_Error( 'juliet_reserved_slug', __( 'That Local Path is reserved by WordPress and cannot be masked.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_reserved_slug', __( 'That Local Path is reserved by WordPress and cannot be masked.', 'juliet-just-masks' ) );
 		}
 
 		$validated = $this->validate_target_url( $target_url );
@@ -177,7 +177,7 @@ class Juliet_Mask_Store {
 		}
 
 		if ( $this->get_by_slug( $slug ) ) {
-			return new WP_Error( 'juliet_duplicate_slug', __( 'A mask with that Local Path already exists.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_duplicate_slug', __( 'A mask with that Local Path already exists.', 'juliet-just-masks' ) );
 		}
 
 		$status = isset( $args['status'] ) && in_array( $args['status'], self::STATUSES, true ) ? $args['status'] : 'active';
@@ -194,7 +194,7 @@ class Juliet_Mask_Store {
 		);
 
 		if ( false === $inserted ) {
-			return new WP_Error( 'juliet_db_error', __( 'Could not save the mask. Please try again.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_db_error', __( 'Could not save the mask. Please try again.', 'juliet-just-masks' ) );
 		}
 
 		$this->invalidate_caches();
@@ -216,7 +216,7 @@ class Juliet_Mask_Store {
 		$existing = $this->get( $id );
 
 		if ( ! $existing ) {
-			return new WP_Error( 'juliet_not_found', __( 'Mask not found.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_not_found', __( 'Mask not found.', 'juliet-just-masks' ) );
 		}
 
 		$fields = array();
@@ -226,16 +226,16 @@ class Juliet_Mask_Store {
 			$slug = $this->sanitize_slug( $data['mask_slug'] );
 
 			if ( ! preg_match( '/^[a-z0-9][a-z0-9_\-]{0,99}$/', $slug ) ) {
-				return new WP_Error( 'juliet_invalid_slug', __( 'The Local Path must be 1–100 characters using letters, numbers, dashes and underscores.', 'juliet-just-mask' ) );
+				return new WP_Error( 'juliet_invalid_slug', __( 'The Local Path must be 1–100 characters using letters, numbers, dashes and underscores.', 'juliet-just-masks' ) );
 			}
 
 			if ( $this->is_reserved_slug( $slug ) ) {
-				return new WP_Error( 'juliet_reserved_slug', __( 'That Local Path is reserved by WordPress and cannot be masked.', 'juliet-just-mask' ) );
+				return new WP_Error( 'juliet_reserved_slug', __( 'That Local Path is reserved by WordPress and cannot be masked.', 'juliet-just-masks' ) );
 			}
 
 			$clash = $this->get_by_slug( $slug );
 			if ( $clash && (int) $clash->id !== $id ) {
-				return new WP_Error( 'juliet_duplicate_slug', __( 'A mask with that Local Path already exists.', 'juliet-just-mask' ) );
+				return new WP_Error( 'juliet_duplicate_slug', __( 'A mask with that Local Path already exists.', 'juliet-just-masks' ) );
 			}
 
 			$fields['mask_slug'] = $slug;
@@ -259,7 +259,7 @@ class Juliet_Mask_Store {
 
 		if ( isset( $data['status'] ) ) {
 			if ( ! in_array( $data['status'], self::STATUSES, true ) ) {
-				return new WP_Error( 'juliet_invalid_status', __( 'Invalid mask status.', 'juliet-just-mask' ) );
+				return new WP_Error( 'juliet_invalid_status', __( 'Invalid mask status.', 'juliet-just-masks' ) );
 			}
 
 			$fields['status'] = $data['status'];
@@ -273,7 +273,7 @@ class Juliet_Mask_Store {
 		$updated = $wpdb->update( $this->table, $fields, array( 'id' => $id ), $format, array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		if ( false === $updated ) {
-			return new WP_Error( 'juliet_db_error', __( 'Could not update the mask. Please try again.', 'juliet-just-mask' ) );
+			return new WP_Error( 'juliet_db_error', __( 'Could not update the mask. Please try again.', 'juliet-just-masks' ) );
 		}
 
 		$this->invalidate_caches();
