@@ -65,7 +65,7 @@ Visitor Browser                WordPress (Juliet Engine)                Remote T
 ### Creating Your First Mask
 1. Click **Create New Mask** in the top-right toolbar.
 2. Enter your desired **Local Path** (e.g. `dashboard` or `promo-app`).
-3. Enter your **Remote Target URL** (e.g. `https://my-cloud-app.vercel.app`).
+3. Enter your **Remote Target URL** (e.g. `https://app.example.com` or `https://external-landing-page.com/promo-1`).
 4. Toggle **Inject `<base>` tag** if the target is a JavaScript-heavy SPA.
 5. Click **Save Mask**. Visiting `yoursite.com/dashboard` will now load your remote application!
 
@@ -123,7 +123,7 @@ add_filter( 'juliet_allow_private_targets', function( $allowed ) {
 ## ❓ Frequently Asked Questions
 
 #### Does Juliet require Nginx or Apache modifications?
-**No.** Juliet operates directly inside WordPress using early request matching and dynamic reverse proxy dispatch. It works on managed hosting (WP Engine, Kinsta, Cloudways, Flywheel, cPanel) without server access.
+**No.** Juliet operates directly inside WordPress using early request matching and dynamic reverse proxy dispatch. It works on any hosting environment without requiring server configuration access.
 
 #### How does Juliet handle Single-Page Applications (SPAs)?
 When **Inject `<base>` tag** is enabled, Juliet adds a root-aligned `<base href>` tag and maps all asset attributes (`src`, `href`, `data-src`, CSS `url()`, etc.) into your local mask path. The SPA's dynamic chunk scripts and API calls stay routed through the proxy.
