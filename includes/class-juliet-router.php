@@ -97,6 +97,16 @@ class Juliet_Router {
 		if ( isset( $active_map[ $slug ] ) ) {
 			$mask = $active_map[ $slug ];
 
+			// Canonical trailing slash redirect for bare mask root slug (/s -> /s/)
+			$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$req_path    = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
+
+			if ( '' === $subpath && '/' !== substr( $req_path, -1 ) && ( ! isset( $_SERVER['REQUEST_METHOD'] ) || in_array( strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ), array( 'GET', 'HEAD' ), true ) ) ) {
+				$query = ! empty( $_SERVER['QUERY_STRING'] ) ? '?' . sanitize_text_field( wp_unslash( $_SERVER['QUERY_STRING'] ) ) : '';
+				wp_safe_redirect( home_url( '/' . $slug . '/' . $query ), 301 );
+				exit;
+			}
+
 			if ( is_object( $wp ) ) {
 				$wp->set_query_var( self::FLAG_VAR, '1' );
 				$wp->set_query_var( self::SLUG_VAR, $slug );

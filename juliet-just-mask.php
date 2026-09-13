@@ -3,7 +3,7 @@
  * Plugin Name:       Juliet Just Masks
  * Plugin URI:        https://wordpress.org/plugins/juliet-just-masks/
  * Description:       URL masking, mask manager, and stealth reverse proxy companion for Romeo Redirect Manager. Maps local paths to remote applications and renders them natively — no iframes, no Nginx rules.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Harsh Trivedi
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'JULIET_VERSION', '1.0.0' );
+define( 'JULIET_VERSION', '1.0.1' );
 define( 'JULIET_PLUGIN_FILE', __FILE__ );
 define( 'JULIET_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'JULIET_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

@@ -28,13 +28,15 @@ class Juliet_HTML_Patcher {
 	 * inside the proxy. Otherwise assets resolve straight at the remote
 	 * origin as before.
 	 *
-	 * @param string $html       Raw remote HTML.
-	 * @param string $source_url The outbound URL the HTML was fetched from.
-	 * @param object $mask       Active mask row.
-	 * @param string $subpath    Normalized sub-path beneath the mask slug ('' for the root).
+	 * @param string   $html          Raw remote HTML.
+	 * @param string   $source_url    The outbound URL the HTML was fetched from.
+	 * @param object   $mask          Active mask row.
+	 * @param string   $subpath       Normalized sub-path beneath the mask slug ('' for the root).
+	 * @param string   $effective_url Optional effective destination URL after redirects.
+	 * @param string[] $extra_hosts   Optional additional known target hosts.
 	 * @return string
 	 */
-	public function patch( $html, $source_url, $mask, $subpath = '' ) {
+	public function patch( $html, $source_url, $mask, $subpath = '', $effective_url = '', array $extra_hosts = array() ) {
 		$html = (string) $html;
 
 		if ( '' === $html || ! $this->looks_like_html( $html ) ) {
@@ -42,6 +44,10 @@ class Juliet_HTML_Patcher {
 		}
 
 		$origin = $this->origin_of( $source_url );
+
+		if ( '' === $origin && '' !== $effective_url ) {
+			$origin = $this->origin_of( $effective_url );
+		}
 
 		if ( '' === $origin ) {
 			return $html;
@@ -58,9 +64,10 @@ class Juliet_HTML_Patcher {
 			$html = $this->rewrite_root_relative_urls( $html, $origin );
 			$html = $this->rewrite_srcset( $html, $origin );
 			$html = $this->rewrite_inline_css_urls( $html, $origin );
+			$html = $this->strip_remote_base_tag( $html, $origin, $mask, $source_url, $effective_url, $extra_hosts );
 		}
 
-		return $this->mask_remote_links( $html, $origin, $mask, $source_url );
+		return $this->mask_remote_links( $html, $origin, $mask, $source_url, $effective_url, $extra_hosts );
 	}
 
 	/**
@@ -277,16 +284,174 @@ class Juliet_HTML_Patcher {
 	}
 
 	/**
-	 * Phase 2 mitigation: rewrites absolute links targeting the remote origin
-	 * back into the mask's local namespace, keeping visitors on this domain.
+	 * Checks if two hostnames represent the same domain, ignoring case and leading www.
 	 *
-	 * @param string $html       HTML.
-	 * @param string $origin     Remote origin.
-	 * @param object $mask       Active mask row.
-	 * @param string $source_url Outbound URL actually fetched.
+	 * @param string $host1 First hostname.
+	 * @param string $host2 Second hostname.
+	 * @return bool
+	 */
+	public function is_same_host( $host1, $host2 ) {
+		$h1 = strtolower( trim( (string) $host1 ) );
+		$h2 = strtolower( trim( (string) $host2 ) );
+
+		if ( '' === $h1 || '' === $h2 ) {
+			return false;
+		}
+
+		if ( $h1 === $h2 ) {
+			return true;
+		}
+
+		$h1_clean = preg_replace( '/^www\./i', '', $h1 );
+		$h2_clean = preg_replace( '/^www\./i', '', $h2 );
+
+		return $h1_clean === $h2_clean;
+	}
+
+	/**
+	 * Checks whether a given host matches any known target host (including www/non-www variants).
+	 *
+	 * @param string   $host         Candidate hostname.
+	 * @param string[] $target_hosts Array of known target hostnames.
+	 * @return bool
+	 */
+	public function matches_target_host( $host, array $target_hosts ) {
+		$h = strtolower( trim( (string) $host ) );
+
+		if ( '' === $h ) {
+			return false;
+		}
+
+		foreach ( $target_hosts as $target_host ) {
+			if ( $this->is_same_host( $h, $target_host ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determines the base directory path from a target URL.
+	 *
+	 * @param string $url Target or source URL.
+	 * @return string Base directory without trailing slash (e.g., '/blog' or '').
+	 */
+	public function base_dir_of( $url ) {
+		$path = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
+
+		if ( '' === $path || '/' === $path ) {
+			return '';
+		}
+
+		// If URL ended with a trailing slash, the whole path is a directory.
+		if ( '/' === substr( $path, -1 ) ) {
+			return rtrim( $path, '/' );
+		}
+
+		// If it has a file extension or filename at the end, strip the last segment.
+		$dir = preg_replace( '~/[^/]*$~', '', $path );
+
+		return '/' === $dir ? '' : rtrim( (string) $dir, '/' );
+	}
+
+	/**
+	 * Collects all known target hosts (including www and non-www variants) for link matching.
+	 *
+	 * @param string   $origin        Origin URL.
+	 * @param object   $mask          Mask row.
+	 * @param string   $source_url    Source URL.
+	 * @param string   $effective_url Optional effective destination URL.
+	 * @param string[] $extra_hosts   Optional additional hostnames.
+	 * @return string[]
+	 */
+	public function collect_target_hosts( $origin, $mask, $source_url, $effective_url = '', array $extra_hosts = array() ) {
+		$raw_hosts = array();
+
+		$candidates = array_merge(
+			array( $origin, $source_url, isset( $mask->target_url ) ? $mask->target_url : '', $effective_url ),
+			$extra_hosts
+		);
+
+		foreach ( $candidates as $candidate ) {
+			if ( '' === (string) $candidate ) {
+				continue;
+			}
+
+			if ( false !== strpos( $candidate, '://' ) || 0 === strpos( $candidate, '//' ) ) {
+				$h = strtolower( (string) wp_parse_url( $candidate, PHP_URL_HOST ) );
+			} else {
+				$h = strtolower( trim( (string) $candidate ) );
+			}
+
+			if ( '' !== $h && ! in_array( $h, $raw_hosts, true ) ) {
+				$raw_hosts[] = $h;
+			}
+		}
+
+		$all_hosts = array();
+		foreach ( $raw_hosts as $h ) {
+			if ( ! in_array( $h, $all_hosts, true ) ) {
+				$all_hosts[] = $h;
+			}
+			$clean = preg_replace( '/^www\./i', '', $h );
+			if ( ! in_array( $clean, $all_hosts, true ) ) {
+				$all_hosts[] = $clean;
+			}
+			$www = 'www.' . $clean;
+			if ( ! in_array( $www, $all_hosts, true ) ) {
+				$all_hosts[] = $www;
+			}
+		}
+
+		return $all_hosts;
+	}
+
+	/**
+	 * Removes or neutralizes any remote <base> tags that would cause relative URLs
+	 * to resolve to the remote origin in the visitor's browser.
+	 *
+	 * @param string   $html          HTML.
+	 * @param string   $origin        Origin URL.
+	 * @param object   $mask          Active mask.
+	 * @param string   $source_url    Source URL.
+	 * @param string   $effective_url Effective destination URL.
+	 * @param string[] $extra_hosts   Known target hosts.
 	 * @return string
 	 */
-	protected function mask_remote_links( $html, $origin, $mask, $source_url ) {
+	public function strip_remote_base_tag( $html, $origin, $mask, $source_url, $effective_url = '', array $extra_hosts = array() ) {
+		$target_hosts = $this->collect_target_hosts( $origin, $mask, $source_url, $effective_url, $extra_hosts );
+
+		return preg_replace_callback(
+			'~<base\b[^>]*\shref(\s*=\s*)(["\']?)([^>\s"\']+)\2[^>]*>~i',
+			function ( $m ) use ( $target_hosts ) {
+				$href = $this->decode_attr( $m[3] );
+				$host = strtolower( (string) wp_parse_url( $href, PHP_URL_HOST ) );
+
+				if ( '' === $host || $this->matches_target_host( $host, $target_hosts ) ) {
+					return '';
+				}
+
+				return $m[0];
+			},
+			$html
+		);
+	}
+
+	/**
+	 * Phase 2 mitigation: rewrites absolute, protocol-relative, and root-relative
+	 * links targeting the remote origin back into the mask's local namespace,
+	 * keeping visitors on this domain.
+	 *
+	 * @param string   $html          HTML.
+	 * @param string   $origin        Remote origin.
+	 * @param object   $mask          Active mask row.
+	 * @param string   $source_url    Outbound URL actually fetched.
+	 * @param string   $effective_url Optional effective destination URL after redirects.
+	 * @param string[] $extra_hosts   Optional additional known target hosts.
+	 * @return string
+	 */
+	public function mask_remote_links( $html, $origin, $mask, $source_url, $effective_url = '', array $extra_hosts = array() ) {
 
 		/**
 		 * Filters whether same-origin remote links are rewritten into the
@@ -299,50 +464,83 @@ class Juliet_HTML_Patcher {
 		}
 
 		$local_origin = $this->origin_of( home_url() );
-
-		if ( '' !== $local_origin && strcasecmp( $local_origin, $origin ) === 0 ) {
-			return $html;
-		}
+		$local_host   = strtolower( (string) wp_parse_url( $local_origin, PHP_URL_HOST ) );
 
 		$slug     = trim( (string) $mask->mask_slug, '/' );
-		$t_parts  = wp_parse_url( $source_url );
-		$base_dir = isset( $t_parts['path'] ) ? rtrim( preg_replace( '~[^/]*$~', '', rtrim( $t_parts['path'], '/' ) ), '/' ) : '';
+		$base_dir = $this->base_dir_of( $source_url );
+		if ( '' === $base_dir && ! empty( $mask->target_url ) ) {
+			$base_dir = $this->base_dir_of( $mask->target_url );
+		}
 
-		$origin_host = strtolower( (string) wp_parse_url( $origin, PHP_URL_HOST ) );
-		$origin_port = (string) wp_parse_url( $origin, PHP_URL_PORT );
+		$target_hosts = $this->collect_target_hosts( $origin, $mask, $source_url, $effective_url, $extra_hosts );
 
+		// 1. Rewrite absolute and protocol-relative links on <a>, <area>, and <form> tags
 		$out = preg_replace_callback(
-			'~(<a\b[^>]*\shref)(\s*=\s*)(["\'])(https?://[^"\']+)\3~i',
-			function ( $m ) use ( $origin_host, $origin_port, $origin, $slug, $base_dir ) {
-				$href = $this->decode_attr( $m[4] );
-				$p    = wp_parse_url( $href );
+			'~(<(?:a|area)\b[^>]*\shref|<form\b[^>]*\saction)(\s*=\s*)(["\']?)((?:https?:)?//[^\s>"\']+)\3~i',
+			function ( $m ) use ( $target_hosts, $local_host, $slug, $base_dir ) {
+				$url = $this->decode_attr( $m[4] );
+				$p   = wp_parse_url( $url );
 
-				if ( empty( $p['host'] ) || strtolower( $p['host'] ) !== $origin_host ) {
+				if ( empty( $p['host'] ) ) {
 					return $m[0];
 				}
 
-				$href_port = isset( $p['port'] ) ? (string) $p['port'] : '';
-				$scheme    = isset( $p['scheme'] ) ? strtolower( $p['scheme'] ) : 'http';
-				$eff_port  = '' !== $href_port && ! ( ( 'https' === $scheme && '443' === $href_port ) || ( 'http' === $scheme && '80' === $href_port ) ) ? $href_port : '';
+				$host = strtolower( $p['host'] );
 
-				if ( $eff_port !== $origin_port ) {
+				// Never mask links pointing to the local site's own host
+				if ( '' !== $local_host && $this->is_same_host( $host, $local_host ) ) {
 					return $m[0];
 				}
 
-				$path = isset( $p['path'] ) ? $p['path'] : '/';
+				if ( ! $this->matches_target_host( $host, $target_hosts ) ) {
+					return $m[0];
+				}
+
+				$path     = isset( $p['path'] ) ? $p['path'] : '/';
+				$query    = isset( $p['query'] ) ? '?' . $p['query'] : '';
+				$fragment = isset( $p['fragment'] ) ? '#' . $p['fragment'] : '';
 
 				if ( '' !== $base_dir && 0 === strpos( $path . '/', $base_dir . '/' ) ) {
 					$path = substr( $path, strlen( $base_dir ) );
 				}
 
+				$local = home_url( '/' . $slug . '/' . ltrim( $path, '/' ) . $query . $fragment );
+				$quote = '' !== $m[3] ? $m[3] : '"';
+
+				return $m[1] . $m[2] . $quote . esc_url( $local ) . $quote;
+			},
+			$html
+		);
+
+		if ( ! is_string( $out ) ) {
+			$out = $html;
+		}
+
+		// 2. Rewrite root-relative links on <a>, <area>, and <form> tags
+		$out = preg_replace_callback(
+			'~(<(?:a|area)\b[^>]*\shref|<form\b[^>]*\saction)(\s*=\s*)(["\']?)(/(?!/)[^\s>"\']*)\3~i',
+			function ( $m ) use ( $slug, $base_dir ) {
+				$raw_val = $this->decode_attr( $m[4] );
+
+				if ( '#' === substr( $raw_val, 0, 1 ) ) {
+					return $m[0];
+				}
+
+				$p        = wp_parse_url( $raw_val );
+				$path     = isset( $p['path'] ) ? $p['path'] : '/';
 				$query    = isset( $p['query'] ) ? '?' . $p['query'] : '';
 				$fragment = isset( $p['fragment'] ) ? '#' . $p['fragment'] : '';
 
-				$local = home_url( '/' . $slug . '/' . ltrim( $path, '/' ) . $query . $fragment );
+				if ( '' !== $base_dir && 0 === strpos( $path . '/', $base_dir . '/' ) ) {
+					$path = substr( $path, strlen( $base_dir ) );
+				}
 
-				return $m[1] . $m[2] . $m[3] . esc_url( $local ) . $m[3];
+				$local = home_url( '/' . $slug . '/' . ltrim( $path, '/' ) . $query . $fragment );
+				$quote = '' !== $m[3] ? $m[3] : '"';
+
+				return $m[1] . $m[2] . $quote . esc_url( $local ) . $quote;
 			},
-			$html
+			$out
 		);
 
 		return is_string( $out ) ? $out : $html;

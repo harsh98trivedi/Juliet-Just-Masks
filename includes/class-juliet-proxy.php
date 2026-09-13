@@ -51,6 +51,20 @@ class Juliet_Proxy {
 	 */
 	protected $subpath = '';
 
+	/**
+	 * Effective destination URL reached if fetch followed redirects.
+	 *
+	 * @var string
+	 */
+	protected $effective_target_url = '';
+
+	/**
+	 * All URLs encountered during remote redirect hops.
+	 *
+	 * @var string[]
+	 */
+	protected $redirect_history_urls = array();
+
 	public function __construct( Juliet_Mask_Store $store ) {
 		$this->store   = $store;
 		$this->patcher = new Juliet_HTML_Patcher();
@@ -199,13 +213,14 @@ class Juliet_Proxy {
 	 * Normalizes a sub-path: strips dot segments and re-encodes each segment.
 	 *
 	 * @param string $path Raw sub-path from the rewrite match.
-	 * @return string Path without leading/trailing slashes (may be empty).
+	 * @return string Path without leading slashes (may be empty, preserves trailing slash).
 	 */
 	protected function normalize_subpath( $path ) {
-		$path = str_replace( '\\', '/', (string) $path );
-		$segs = array();
+		$raw_path     = str_replace( '\\', '/', (string) $path );
+		$has_trailing = '/' === substr( $raw_path, -1 );
+		$segs         = array();
 
-		foreach ( explode( '/', $path ) as $segment ) {
+		foreach ( explode( '/', $raw_path ) as $segment ) {
 			$segment = trim( rawurldecode( $segment ) );
 
 			if ( '' === $segment || '.' === $segment ) {
@@ -224,7 +239,13 @@ class Juliet_Proxy {
 			}
 		}
 
-		return implode( '/', $segs );
+		$normalized = implode( '/', $segs );
+
+		if ( $has_trailing && '' !== $normalized ) {
+			$normalized .= '/';
+		}
+
+		return $normalized;
 	}
 
 	/**
@@ -262,9 +283,9 @@ class Juliet_Proxy {
 				$url .= '?' . http_build_query( $merged );
 			}
 		} else {
-			$base_dir = rtrim( preg_replace( '~[^/]*$~', '', rtrim( $t_path, '/' ) ), '/' );
+			$base_dir = $this->patcher->base_dir_of( $mask->target_url );
 
-			$url = $origin . $base_dir . '/' . $subpath;
+			$url = $origin . ( '' !== $base_dir ? $base_dir : '' ) . '/' . ltrim( $subpath, '/' );
 
 			if ( ! empty( $local_args ) ) {
 				$url .= '?' . http_build_query( $local_args );
@@ -585,7 +606,74 @@ class Juliet_Proxy {
 		 */
 		$args = apply_filters( 'juliet_request_args', $args, $url, $this->mask );
 
-		return wp_remote_request( $url, $args );
+		$response = wp_remote_request( $url, $args );
+
+		if ( ! is_wp_error( $response ) ) {
+			$this->extract_effective_url( $response );
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Extracts the final effective URL and intermediate redirect URLs from a WP HTTP response.
+	 *
+	 * @param array $response Return value of wp_remote_request().
+	 */
+	protected function extract_effective_url( array $response ) {
+		if ( ! isset( $response['http_response'] ) || ! is_object( $response['http_response'] ) ) {
+			return;
+		}
+
+		if ( ! method_exists( $response['http_response'], 'get_response_object' ) ) {
+			return;
+		}
+
+		$raw = $response['http_response']->get_response_object();
+
+		if ( ! is_object( $raw ) ) {
+			return;
+		}
+
+		if ( ! empty( $raw->url ) ) {
+			$this->effective_target_url = (string) $raw->url;
+		}
+
+		if ( ! empty( $raw->history ) && is_array( $raw->history ) ) {
+			foreach ( $raw->history as $prev_resp ) {
+				if ( is_object( $prev_resp ) && ! empty( $prev_resp->url ) ) {
+					$this->redirect_history_urls[] = (string) $prev_resp->url;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Collects all known target hosts for the current request.
+	 *
+	 * @return string[]
+	 */
+	protected function get_all_target_hosts() {
+		$hosts = array();
+
+		$candidates = array(
+			$this->mask ? $this->mask->target_url : '',
+			$this->target_url,
+			$this->effective_target_url,
+		);
+
+		if ( ! empty( $this->redirect_history_urls ) ) {
+			$candidates = array_merge( $candidates, $this->redirect_history_urls );
+		}
+
+		foreach ( $candidates as $url ) {
+			$h = strtolower( (string) wp_parse_url( (string) $url, PHP_URL_HOST ) );
+			if ( '' !== $h && ! in_array( $h, $hosts, true ) ) {
+				$hosts[] = $h;
+			}
+		}
+
+		return $hosts;
 	}
 
 	/**
@@ -659,7 +747,7 @@ class Juliet_Proxy {
 		header( 'Access-Control-Allow-Origin: *' );
 
 		if ( $code >= 300 && $code < 400 && '' !== $headers['location'] ) {
-			header( 'Location: ' . $this->strip_crlf( $this->absolutize_location( $headers['location'] ) ) );
+			header( 'Location: ' . $this->strip_crlf( $this->rewrite_redirect_location( $headers['location'] ) ) );
 		}
 
 		if ( '' !== $headers['disposition'] ) {
@@ -684,7 +772,7 @@ class Juliet_Proxy {
 		}
 
 		if ( $is_html && $ok_code && $is_get ) {
-			$body = $this->patcher->patch( $body, $this->current_target_url(), $this->mask, $this->current_subpath() );
+			$body = $this->patcher->patch( $body, $this->current_target_url(), $this->mask, $this->current_subpath(), $this->effective_target_url, $this->get_all_target_hosts() );
 		} elseif ( $is_css && $ok_code && $is_get ) {
 			$prefix = ! empty( $this->mask->enable_base_inject ) ? home_url( '/' . trim( $this->mask->mask_slug, '/' ) ) : $this->patcher->origin_of( $this->target_url );
 			$body   = $this->patcher->patch_standalone_css( $body, $prefix );
@@ -754,31 +842,76 @@ class Juliet_Proxy {
 	}
 
 	/**
+	 * Rewrites a redirect Location header so that same-origin destinations
+	 * stay inside the local mask slug instead of leaking to the remote origin.
+	 * External third-party redirects (e.g. OAuth, Stripe) pass through untouched.
+	 *
+	 * @param string $location Location header value.
+	 * @return string Rewritten local URL or external URL.
+	 */
+	protected function rewrite_redirect_location( $location ) {
+		$location = trim( (string) $location );
+
+		if ( '' === $location ) {
+			return $location;
+		}
+
+		$slug = trim( (string) $this->mask->mask_slug, '/' );
+		$p    = wp_parse_url( $location );
+
+		// If it's a relative path (e.g., '/registration-information/' or 'about/')
+		if ( empty( $p['host'] ) ) {
+			$path     = isset( $p['path'] ) ? $p['path'] : '/';
+			$query    = isset( $p['query'] ) ? '?' . $p['query'] : '';
+			$fragment = isset( $p['fragment'] ) ? '#' . $p['fragment'] : '';
+
+			// If it's root-relative
+			if ( '/' === substr( $path, 0, 1 ) ) {
+				$base_dir = $this->patcher->base_dir_of( $this->mask->target_url );
+				if ( '' !== $base_dir && 0 === strpos( $path . '/', $base_dir . '/' ) ) {
+					$path = substr( $path, strlen( $base_dir ) );
+				}
+
+				return home_url( '/' . $slug . '/' . ltrim( $path, '/' ) . $query . $fragment );
+			}
+
+			// If it's document-relative, resolve against current subpath directory
+			$current_dir = trim( dirname( $this->subpath ), '/.' );
+			$full_path   = '' !== $current_dir ? $current_dir . '/' . $path : $path;
+
+			return home_url( '/' . $slug . '/' . ltrim( $full_path, '/' ) . $query . $fragment );
+		}
+
+		// It has a host. Check if it matches any target host.
+		$target_hosts = $this->get_all_target_hosts();
+
+		if ( $this->patcher->matches_target_host( $p['host'], $target_hosts ) ) {
+			$path     = isset( $p['path'] ) ? $p['path'] : '/';
+			$query    = isset( $p['query'] ) ? '?' . $p['query'] : '';
+			$fragment = isset( $p['fragment'] ) ? '#' . $p['fragment'] : '';
+
+			$base_dir = $this->patcher->base_dir_of( $this->mask->target_url );
+			if ( '' !== $base_dir && 0 === strpos( $path . '/', $base_dir . '/' ) ) {
+				$path = substr( $path, strlen( $base_dir ) );
+			}
+
+			return home_url( '/' . $slug . '/' . ltrim( $path, '/' ) . $query . $fragment );
+		}
+
+		// Truly external third-party redirect (e.g. PayPal, Stripe)
+		return $location;
+	}
+
+	/**
 	 * Converts a relative Location header into an absolute URL.
+	 *
+	 * Maintained for backward compatibility; internally delegates to rewrite_redirect_location.
 	 *
 	 * @param string $location Location header value.
 	 * @return string
 	 */
 	protected function absolutize_location( $location ) {
-		$location = trim( $location );
-		$parts    = wp_parse_url( $this->mask->target_url );
-
-		if ( preg_match( '#^https?://#i', $location ) ) {
-			return $location;
-		}
-
-		$scheme = isset( $parts['scheme'] ) ? $parts['scheme'] : 'https';
-		$host   = isset( $parts['host'] ) ? $parts['host'] : '';
-		$port   = isset( $parts['port'] ) ? ':' . $parts['port'] : '';
-		$origin = $scheme . '://' . $host . $port;
-
-		if ( '' !== $location && '/' === $location[0] ) {
-			return $origin . $location;
-		}
-
-		$t_path = isset( $parts['path'] ) ? preg_replace( '~[^/]*$~', '', $parts['path'] ) : '/';
-
-		return $origin . $t_path . $location;
+		return $this->rewrite_redirect_location( $location );
 	}
 
 	/**

@@ -4,7 +4,7 @@ Tags: url-masking, mask-manager, reverse-proxy, url-masker, stealth-routing
 Donate link: https://buymeacoffee.com/harshtrivedi
 Requires at least: 6.2
 Tested up to: 7.1
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,14 @@ Masks register at top priority. If you pick a path already used by a page, the m
 * `juliet_honor_loop_guard` — block requests that already carry the proxy signature (default true).
 
 == Changelog ==
+ 
+= 1.0.1 =
+* Fix: Prevent navigation escaping when remote links use 'www.' or apex domain variations.
+* Fix: Rewrite remote HTTP redirect (Location) headers back into the local mask slug instead of sending visitors to the external domain.
+* Fix: Normalize sub-paths with trailing slashes to prevent unnecessary remote canonical redirects.
+* Fix: Add canonical trailing slash redirect for bare mask root requests (/slug -> /slug/) so browser relative URLs resolve within the mask folder.
+* Fix: Directly rewrite root-relative links in <a>, <area>, and <form action> to the local mask namespace.
+* Fix: Neutralize remote <base> tags that point to external origins.
 
 = 1.0.0 =
 * Initial release: Stealth Routing Engine, Mask Registry UI, Asset Dependency Patcher, link masking, header passthrough, SSRF protection, base-tag injection, response caching and native 404 fallback.
